@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ChronoSpan – Time Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <style>
+    :root {
+      --body-bg: radial-gradient(circle at top, #020617 0, #000 55%, #020617 100%);
+      --bg-gradient-start: #020617;
+      --bg-gradient-end: #0f172a;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.1);
+      --card-bg: rgba(15, 23, 42, 0.9);
+      --card-border: rgba(148, 163, 184, 0.3);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.8);
+      --radius-xl: 24px;
+      --transition-fast: 160ms ease-out;
+    }
+
+    /* Light mode overrides */
+    body.light {
+      --body-bg: radial-gradient(circle at top, #e5e7eb 0, #f9fafb 55%, #e5e7eb 100%);
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --card-border: rgba(148, 163, 184, 0.6);
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent-soft: rgba(56, 189, 248, 0.12);
+      --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+        "Segoe UI", sans-serif;
+      background: var(--body-bg);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      transition: background 220ms ease-out, color 220ms ease-out;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 720px;
+      background: linear-gradient(
+          135deg,
+          rgba(56, 189, 248, 0.06),
+          rgba(129, 140, 248, 0.05)
+        ),
+        var(--card-bg);
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-soft);
+      padding: 24px 22px 20px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+      transition: background 220ms ease-out, border-color 220ms ease-out, box-shadow 220ms ease-out;
+    }
+
+    @media (min-width: 640px) {
+      .app {
+        padding: 28px 30px 24px;
+      }
+    }
+
+    /* Glow effects */
+    .glow {
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(40px);
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow.blue {
+      width: 180px;
+      height: 180px;
+      background: rgba(56, 189, 248, 0.35);
+      top: -40px;
+      right: -40px;
+    }
+
+    .glow.purple {
+      width: 160px;
+      height: 160px;
+      background: rgba(129, 140, 248, 0.25);
+      bottom: -40px;
+      left: -40px;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .headline-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h1 span.logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe 0, #38bdf8 40%, #0369a1 100%);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.9);
+    }
+
+    .chip {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      background: rgba(15, 23, 42, 0.8);
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .chip-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .right-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .toggle-button {
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.85);
+      color: #e5e7eb;
+      font-size: 0.72rem;
+      padding: 5px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: background var(--transition-fast), border-color var(--transition-fast),
+        transform var(--transition-fast), box-shadow var(--transition-fast), color var(--transition-fast);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.6);
+      white-space: nowrap;
+    }
+
+    body.light .toggle-button {
+      background: rgba(255, 255, 255, 0.95);
+      color: #0f172a;
+      border-color: rgba(148, 163, 184, 0.8);
+      box-shadow: 0 6px 14px rgba(148, 163, 184, 0.4);
+    }
+
+    .toggle-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.8);
+    }
+
+    .toggle-button:active {
+      transform: translateY(0);
+      box-shadow: 0 6px 14px rgba(15, 23, 42, 0.7);
+    }
+
+    .toggle-icon {
+      font-size: 0.9rem;
+    }
+
+    .toggle-label {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      transition: color 220ms ease-out;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      transition: color 220ms ease-out;
+    }
+
+    .input-row {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    @media (min-width: 520px) {
+      .input-row {
+        flex-direction: row;
+        align-items: center;
+      }
+    }
+
+    input[type="datetime-local"] {
+      flex: 1;
+      background: radial-gradient(circle at top left,
+          rgba(15, 23, 42, 0.9),
+          rgba(15, 23, 42, 0.95));
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      outline: none;
+      transition: border var(--transition-fast), box-shadow var(--transition-fast),
+        transform var(--transition-fast), background var(--transition-fast), color 220ms ease-out;
+    }
+
+    body.light input[type="datetime-local"] {
+      background: radial-gradient(circle at top left,
+          rgba(255, 255, 255, 0.98),
+          rgba(241, 245, 249, 0.98));
+      border-color: rgba(148, 163, 184, 0.7);
+    }
+
+    input[type="datetime-local"]:focus {
+      border-color: rgba(56, 189, 248, 0.85);
+      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+      transform: translateY(-0.5px);
+      background: radial-gradient(circle at top,
+          rgba(15, 23, 42, 1),
+          rgba(15, 23, 42, 0.98));
+    }
+
+    body.light input[type="datetime-local"]:focus {
+      background: radial-gradient(circle at top,
+          rgba(255, 255, 255, 1),
+          rgba(241, 245, 249, 1));
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      background: radial-gradient(circle at 30% 0,
+          #e0f2fe 0,
+          #38bdf8 35%,
+          #0ea5e9 70%,
+          #0369a1 100%);
+      color: #0b1120;
+      font-weight: 600;
+      font-size: 0.9rem;
+      padding: 10px 18px;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 12px 22px rgba(15, 23, 42, 0.9);
+      transition: transform var(--transition-fast),
+        box-shadow var(--transition-fast), filter var(--transition-fast);
+    }
+
+    button:hover {
+      transform: translateY(-1px) scale(1.01);
+      box-shadow: 0 16px 26px rgba(15, 23, 42, 1);
+      filter: brightness(1.03);
+    }
+
+    button:active {
+      transform: translateY(0) scale(0.99);
+      box-shadow: 0 10px 16px rgba(15, 23, 42, 0.9);
+      filter: brightness(0.97);
+    }
+
+    .btn-icon {
+      font-size: 0.95rem;
+    }
+
+    .hint-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      margin-top: 2px;
+    }
+
+    .hint {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      opacity: 0.9;
+      transition: color 220ms ease-out;
+    }
+
+    .error {
+      font-size: 0.8rem;
+      color: var(--danger);
+      text-align: right;
+      min-height: 1em;
+    }
+
+    .results {
+      border-radius: 18px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: radial-gradient(circle at top left,
+          rgba(15, 23, 42, 0.96),
+          rgba(15, 23, 42, 0.94));
+      padding: 14px 14px 10px;
+      margin-top: 6px;
+      position: relative;
+      overflow: hidden;
+      transition: background 220ms ease-out, border-color 220ms ease-out;
+    }
+
+    body.light .results {
+      background: radial-gradient(circle at top left,
+          rgba(255, 255, 255, 0.98),
+          rgba(241, 245, 249, 0.98));
+      border-color: rgba(148, 163, 184, 0.6);
+    }
+
+    .results::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(56, 189, 248, 0.1),
+        transparent 40%,
+        rgba(129, 140, 248, 0.12)
+      );
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .results-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .results-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--text-muted);
+      transition: color 220ms ease-out;
+    }
+
+    .results-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      transition: color 220ms ease-out;
+    }
+
+    .accent-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.13em;
+      transition: background 220ms ease-out, border-color 220ms ease-out;
+    }
+
+    .accent-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    @media (min-width: 580px) {
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .metric {
+      border-radius: 14px;
+      padding: 10px 9px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-height: 56px;
+      transition: transform var(--transition-fast),
+        box-shadow var(--transition-fast),
+        border-color var(--transition-fast),
+        background var(--transition-fast);
+    }
+
+    body.light .metric {
+      background: rgba(255, 255, 255, 0.96);
+      border-color: rgba(148, 163, 184, 0.6);
+    }
+
+    .metric:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px rgba(15, 23, 42, 0.8);
+      border-color: rgba(56, 189, 248, 0.6);
+      background: radial-gradient(circle at top,
+          rgba(15, 23, 42, 0.98),
+          rgba(15, 23, 42, 0.94));
+    }
+
+    body.light .metric:hover {
+      background: radial-gradient(circle at top,
+          rgba(255, 255, 255, 1),
+          rgba(241, 245, 249, 1));
+      box-shadow: 0 10px 20px rgba(148, 163, 184, 0.45);
+    }
+
+    .metric-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      transition: color 220ms ease-out;
+    }
+
+    .unit {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+      opacity: 0.9;
+    }
+
+    .value {
+      font-size: 1.0rem;
+      font-variant-numeric: tabular-nums;
+      margin-top: 2px;
+      transition: color 220ms ease-out;
+    }
+
+    .value-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 1px;
+      transition: color 220ms ease-out;
+    }
+
+    .footer {
+      margin-top: 12px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      transition: color 220ms ease-out;
+    }
+
+    .footer span {
+      opacity: 0.9;
+    }
+
+    .hidden {
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      max-height: 0;
+      margin-top: 0;
+      transition: opacity 140ms ease-out, transform 140ms ease-out,
+        max-height 140ms ease-out, margin-top 140ms ease-out;
+    }
+
+    .results.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+      max-height: 600px;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <div class="glow blue"></div>
+    <div class="glow purple"></div>
+
+    <div class="content">
+      <div class="headline-row">
+        <h1>
+          <span class="logo-dot"></span>
+          ChronoSpan
+        </h1>
+        <div class="right-header">
+          <div class="chip">
+            <span class="chip-dot"></span>
+            Time Calculator
+          </div>
+
+          <!-- Time format toggle -->
+          <button class="toggle-button" id="timeFormatToggle" type="button" aria-label="Toggle time format">
+            <span class="toggle-icon" id="timeFormatIcon">🕘</span>
+            <span class="toggle-label" id="timeFormatLabel">24H</span>
+          </button>
+
+          <!-- Theme toggle -->
+          <button class="toggle-button" id="themeToggle" type="button" aria-label="Toggle dark or light mode">
+            <span class="toggle-icon" id="themeIcon">🌙</span>
+            <span class="toggle-label" id="themeLabel">Dark</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="subtitle">
+        Select a date and see in real time how many decades, years, days, hours,
+        minutes, seconds and milliseconds have passed since then.
+      </p>
+
+      <div>
+        <label for="startTime">Start Date</label>
+        <div class="input-row">
+          <input type="datetime-local" id="startTime" />
+          <button id="calcBtn">
+            <span class="btn-icon">⏱</span>
+            <span>Calculate</span>
+          </button>
+        </div>
+        <div class="hint-row">
+          <p class="hint">
+            Tip: Use your birthday, a project start, or a special event.
+          </p>
+          <p id="error" class="error"></p>
+        </div>
+      </div>
+
+      <div id="result" class="results hidden">
+        <div class="results-inner">
+          <div class="results-header">
+            <div>
+              <div class="results-title">Elapsed Time</div>
+              <div class="results-meta" id="fromLabel"></div>
+            </div>
+            <div class="accent-pill">
+              <span class="accent-pill-dot"></span>
+              Live Updating
+            </div>
+          </div>
+
+          <div class="grid">
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Decades</span>
+                <span class="unit">10 years</span>
+              </div>
+              <div class="value" id="decadesVal">–</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Years</span>
+                <span class="unit">≈ 365.25 days</span>
+              </div>
+              <div class="value" id="yearsVal">–</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Days</span>
+                <span class="unit">24 hours</span>
+              </div>
+              <div class="value" id="daysVal">–</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Hours</span>
+                <span class="unit">60 minutes</span>
+              </div>
+              <div class="value" id="hoursVal">–</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Minutes</span>
+                <span class="unit">60 seconds</span>
+              </div>
+              <div class="value" id="minutesVal">–</div>
+            </div>
+
+            <div class="metric">
+              <div class="metric-label-row">
+                <span class="label">Seconds</span>
+                <span class="unit">1,000 ms</span>
+              </div>
+              <div class="value" id="secondsVal">–</div>
+              <div class="value-sub">
+                <span id="msVal">–</span> milliseconds
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer with version and copyright -->
+      <div class="footer">
+        <span>Runs locally in your browser</span>
+        <span>No storage · No tracking</span>
+        <span>Version: BETA-1.0.0.2511</span>
+        <span>© RaveThis 2025</span>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // UI elements
+      const input = document.getElementById("startTime");
+      const button = document.getElementById("calcBtn");
+      const errorEl = document.getElementById("error");
+      const resultEl = document.getElementById("result");
+      const fromLabel = document.getElementById("fromLabel");
+
+      const decadesVal = document.getElementById("decadesVal");
+      const yearsVal = document.getElementById("yearsVal");
+      const daysVal = document.getElementById("daysVal");
+      const hoursVal = document.getElementById("hoursVal");
+      const minutesVal = document.getElementById("minutesVal");
+      const secondsVal = document.getElementById("secondsVal");
+      const msVal = document.getElementById("msVal");
+
+      const themeToggle = document.getElementById("themeToggle");
+      const themeIcon = document.getElementById("themeIcon");
+      const themeLabel = document.getElementById("themeLabel");
+
+      const timeFormatToggle = document.getElementById("timeFormatToggle");
+      const timeFormatIcon = document.getElementById("timeFormatIcon");
+      const timeFormatLabel = document.getElementById("timeFormatLabel");
+
+      // Time constants
+      const MS_PER_SECOND = 1000;
+      const MS_PER_MINUTE = MS_PER_SECOND * 60;
+      const MS_PER_HOUR = MS_PER_MINUTE * 60;
+      const MS_PER_DAY = MS_PER_HOUR * 24;
+      const MS_PER_YEAR = MS_PER_DAY * 365.25; // approximate
+      const MS_PER_DECADE = MS_PER_YEAR * 10;
+
+      // State
+      let timerId = null;
+      let lastStartDate = null;
+      let currentTimeFormat = "24h"; // "24h" or "12h"
+
+      function getLocaleForNumbers() {
+        return currentTimeFormat === "24h" ? "de-DE" : "en-US";
+      }
+
+      // Format numbers according to chosen locale
+      function formatNumber(value) {
+        const locale = getLocaleForNumbers();
+        return value.toLocaleString(locale, {
+          maximumFractionDigits: 3
+        });
+      }
+
+      // Format datetime label according to chosen time format
+      function formatDateTimeForLabel(date) {
+        if (currentTimeFormat === "24h") {
+          // German style, 24-hour clock
+          return date.toLocaleString("de-DE", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false
+          });
+        } else {
+          // US style, 12-hour clock with AM/PM
+          return date.toLocaleString("en-US", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+          });
+        }
+      }
+
+      function startLiveUpdate(startDate) {
+        lastStartDate = startDate;
+
+        if (timerId !== null) {
+          clearInterval(timerId);
+        }
+
+        function update() {
+          const now = new Date();
+          const diffMs = now - startDate;
+
+          if (diffMs < 0) {
+            showError("Please choose a date in the past.");
+            hideResults();
+            return;
+          }
+
+          clearError();
+
+          const decades = diffMs / MS_PER_DECADE;
+          const years = diffMs / MS_PER_YEAR;
+          const days = diffMs / MS_PER_DAY;
+          const hours = diffMs / MS_PER_HOUR;
+          const minutes = diffMs / MS_PER_MINUTE;
+          const seconds = diffMs / MS_PER_SECOND;
+
+          decadesVal.textContent = formatNumber(decades);
+          yearsVal.textContent = formatNumber(years);
+          daysVal.textContent = formatNumber(days);
+          hoursVal.textContent = formatNumber(hours);
+          minutesVal.textContent = formatNumber(minutes);
+          secondsVal.textContent = formatNumber(seconds);
+          msVal.textContent = diffMs.toLocaleString(getLocaleForNumbers());
+
+          fromLabel.textContent =
+            "Since " +
+            formatDateTimeForLabel(startDate) +
+            " (" +
+            startDate.toISOString().slice(0, 19).replace("T", " ") +
+            " UTC)";
+
+          showResults();
+        }
+
+        update();
+        timerId = setInterval(update, 100);
+      }
+
+      function showError(msg) {
+        errorEl.textContent = msg;
+      }
+
+      function clearError() {
+        errorEl.textContent = "";
+      }
+
+      function showResults() {
+        resultEl.classList.remove("hidden");
+        resultEl.classList.add("show");
+      }
+
+      function hideResults() {
+        resultEl.classList.remove("show");
+        resultEl.classList.add("hidden");
+      }
+
+      function handleCalculate() {
+        const value = input.value;
+
+        if (!value) {
+          showError("Please select a date and time first.");
+          hideResults();
+          return;
+        }
+
+        const startDate = new Date(value);
+        if (isNaN(startDate.getTime())) {
+          showError("Invalid date/time format.");
+          hideResults();
+          return;
+        }
+
+        if (startDate > new Date()) {
+          showError("The selected date is in the future.");
+          hideResults();
+          return;
+        }
+
+        clearError();
+        startLiveUpdate(startDate);
+      }
+
+      button.addEventListener("click", handleCalculate);
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          handleCalculate();
+        }
+      });
+
+      // Prefill with a date one year ago
+      (function setDefaultValue() {
+        const now = new Date();
+        const defaultDate = new Date(
+          now.getFullYear() - 1,
+          now.getMonth(),
+          now.getDate(),
+          now.getHours(),
+          now.getMinutes()
+        );
+
+        const pad = (n) => String(n).padStart(2, "0");
+        const localISO =
+          defaultDate.getFullYear() +
+          "-" +
+          pad(defaultDate.getMonth() + 1) +
+          "-" +
+          pad(defaultDate.getDate()) +
+          "T" +
+          pad(defaultDate.getHours()) +
+          ":" +
+          pad(defaultDate.getMinutes());
+
+        input.value = localISO;
+      })();
+
+      // Theme handling
+      function applyTheme(theme) {
+        if (theme === "light") {
+          document.body.classList.add("light");
+          themeIcon.textContent = "☀️";
+          themeLabel.textContent = "Light";
+        } else {
+          document.body.classList.remove("light");
+          themeIcon.textContent = "🌙";
+          themeLabel.textContent = "Dark";
+        }
+      }
+
+      function initTheme() {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("chronospan-theme");
+        } catch (e) {
+          stored = null;
+        }
+
+        if (stored === "light" || stored === "dark") {
+          applyTheme(stored);
+        } else {
+          const prefersDark = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches;
+          applyTheme(prefersDark ? "dark" : "light");
+        }
+      }
+
+      themeToggle.addEventListener("click", function () {
+        const isLight = document.body.classList.contains("light");
+        const nextTheme = isLight ? "dark" : "light";
+        applyTheme(nextTheme);
+        try {
+          localStorage.setItem("chronospan-theme", nextTheme);
+        } catch (e) {
+          // ignore storage errors
+        }
+      });
+
+      // Time format handling
+      function applyTimeFormat(format) {
+        currentTimeFormat = format === "12h" ? "12h" : "24h";
+
+        if (currentTimeFormat === "24h") {
+          timeFormatIcon.textContent = "🕘";
+          timeFormatLabel.textContent = "24H";
+        } else {
+          timeFormatIcon.textContent = "🕒";
+          timeFormatLabel.textContent = "AM/PM";
+        }
+
+        // Re-render values if a start date exists
+        if (lastStartDate instanceof Date && !isNaN(lastStartDate.getTime())) {
+          startLiveUpdate(lastStartDate);
+        }
+      }
+
+      function initTimeFormat() {
+        let stored = null;
+        try {
+          stored = localStorage.getItem("chronospan-timeformat");
+        } catch (e) {
+          stored = null;
+        }
+
+        if (stored === "12h" || stored === "24h") {
+          applyTimeFormat(stored);
+        } else {
+          // default: German style 24h
+          applyTimeFormat("24h");
+        }
+      }
+
+      timeFormatToggle.addEventListener("click", function () {
+        const nextFormat = currentTimeFormat === "24h" ? "12h" : "24h";
+        applyTimeFormat(nextFormat);
+        try {
+          localStorage.setItem("chronospan-timeformat", nextFormat);
+        } catch (e) {
+          // ignore storage errors
+        }
+      });
+
+      // Initialize everything
+      initTheme();
+      initTimeFormat();
+    })();
+  </script>
+</body>
+</html>
